@@ -1,45 +1,23 @@
-package info.nukoneko.android.readnfcf;
+package info.nukoneko.android.readnfcf.utils;
 
-import android.app.PendingIntent;
+
 import android.content.Intent;
-import android.databinding.DataBindingUtil;
 import android.nfc.NfcAdapter;
 import android.nfc.Tag;
 import android.nfc.tech.NfcF;
-import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
-import android.support.v7.app.AppCompatActivity;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
 
-import info.nukoneko.android.readnfcf.databinding.ActivityMainBinding;
 import info.nukoneko.android.readnfcf.entity.PollingResultObject;
 import info.nukoneko.android.readnfcf.entity.ReadResultObject;
 
+public final class NFCUtils {
+    private NFCUtils(){}
 
-public final class MainActivity extends AppCompatActivity {
-
-    NfcAdapter mNfcAdapter;
-    PendingIntent mPendingIntent;
-    ActivityMainBinding binding;
-
-    @Override
-    protected void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-        binding = DataBindingUtil.setContentView(this, R.layout.activity_main);
-
-        mNfcAdapter = NfcAdapter.getDefaultAdapter(this);
-        mPendingIntent =
-                PendingIntent.getActivity(
-                        this, 0,
-                        new Intent(this, this.getClass())
-                                .addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP), 0
-                );
-    }
-
-    private void readNFC(Intent intent) {
+    @NonNull public static String readNFC(Intent intent) {
         StringBuilder builder = new StringBuilder();
         Tag tag = intent.getParcelableExtra(NfcAdapter.EXTRA_TAG);
         NfcF techF = NfcF.get(tag);
@@ -77,18 +55,17 @@ public final class MainActivity extends AppCompatActivity {
                             builder.append("00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00\n");
                         }
                     }
-
-                    System.out.println(builder);
-                    binding.readResult.setText(builder);
+                    return builder.toString();
                 }
             }
         } catch (IOException e) {
             e.printStackTrace();
         }
+        return "";
     }
 
     @Nullable
-    private PollingResultObject nfcPolling(@NonNull NfcF nfcF, byte[] SYSTEM_CODE) {
+    private static PollingResultObject nfcPolling(@NonNull NfcF nfcF, byte[] SYSTEM_CODE) {
         try {
             return new PollingResultObject(
                     nfcF.transceive(new byte[]{
@@ -106,7 +83,7 @@ public final class MainActivity extends AppCompatActivity {
     }
 
     @Nullable
-    private ReadResultObject nfcReadWithoutEncryption(@NonNull NfcF nfcF, byte[] IDm, byte[] readBlock) {
+    private static ReadResultObject nfcReadWithoutEncryption(@NonNull NfcF nfcF, byte[] IDm, byte[] readBlock) {
         try {
             byte[] command = new byte[]{
                     (byte) 0x06, // command polling -> 00
@@ -137,19 +114,8 @@ public final class MainActivity extends AppCompatActivity {
         }
     }
 
-    private void resolveIntent(Intent intent){
-        String action = intent.getAction();
-        if(NfcAdapter.ACTION_NDEF_DISCOVERED.equals(action)
-                || NfcAdapter.ACTION_TECH_DISCOVERED.equals(action)
-                || NfcAdapter.ACTION_TAG_DISCOVERED.equals(action)){
-            readNFC(getIntent());
-        }else{
-            finish();
-        }
-    }
-
     @NonNull
-    private String byte2StringSpace(byte[] bytes, String separate) {
+    private static String byte2StringSpace(byte[] bytes, String separate) {
         StringBuilder ret = new StringBuilder();
         if ( bytes != null) {
             for (byte aByte : bytes) {
@@ -161,25 +127,5 @@ public final class MainActivity extends AppCompatActivity {
             }
         }
         return ret.toString();
-    }
-
-    @Override
-    public void onNewIntent(Intent intent){
-        setIntent(intent);
-        resolveIntent(intent);
-    }
-
-    @Override
-    protected void onResume(){
-        super.onResume();
-        if (mNfcAdapter != null)
-            mNfcAdapter.enableForegroundDispatch(this, mPendingIntent, null, null);
-    }
-
-    @Override
-    protected  void onPause(){
-        super.onPause();
-        if (mNfcAdapter != null)
-            mNfcAdapter.disableForegroundDispatch(this);
     }
 }
