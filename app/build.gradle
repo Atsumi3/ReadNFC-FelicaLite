@@ -12,8 +12,19 @@ android {
         versionName "1.0.0"
     }
     buildTypes {
-        release {
+        applicationVariants.all { variant ->
+            variant.outputs.each { output ->
+                output.outputFile = new File(
+                        output.outputFile.parent,
+                        output.outputFile.name.replace(".apk", "-${variant.versionName}-${variant.versionCode}.apk"))
+            }
+        }
+        debug {
             minifyEnabled false
+            proguardFiles 'proguard-rules.pro'
+        }
+        release {
+            minifyEnabled true
             proguardFiles 'proguard-rules.pro'
         }
     }
