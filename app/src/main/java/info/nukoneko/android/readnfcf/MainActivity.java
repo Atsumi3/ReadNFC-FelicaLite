@@ -1,4 +1,4 @@
-package info.nukoneko.readnfcf;
+package info.nukoneko.android.readnfcf;
 
 import android.app.PendingIntent;
 import android.content.Intent;
@@ -17,6 +17,8 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Arrays;
+
+import info.nukoneko.android.readnfcf.R;
 
 
 public class MainActivity extends ActionBarActivity {
