@@ -2,34 +2,33 @@ package info.nukoneko.android.readnfcf;
 
 import android.app.PendingIntent;
 import android.content.Intent;
-import android.media.AudioManager;
-import android.media.SoundPool;
+import android.databinding.DataBindingUtil;
 import android.nfc.NfcAdapter;
 import android.nfc.Tag;
 import android.nfc.tech.NfcF;
-import android.support.v7.app.ActionBarActivity;
 import android.os.Bundle;
-import android.view.Menu;
-import android.view.MenuItem;
-import android.widget.TextView;
+import android.support.annotation.NonNull;
+import android.support.annotation.Nullable;
+import android.support.v7.app.AppCompatActivity;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.util.ArrayList;
-import java.util.Arrays;
 
-import info.nukoneko.android.readnfcf.R;
+import info.nukoneko.android.readnfcf.databinding.ActivityMainBinding;
+import info.nukoneko.android.readnfcf.entity.PollingResultObject;
+import info.nukoneko.android.readnfcf.entity.ReadResultObject;
 
 
-public class MainActivity extends ActionBarActivity {
+public final class MainActivity extends AppCompatActivity {
 
     NfcAdapter mNfcAdapter;
     PendingIntent mPendingIntent;
+    ActivityMainBinding binding;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_main);
+        binding = DataBindingUtil.setContentView(this, R.layout.activity_main);
 
         mNfcAdapter = NfcAdapter.getDefaultAdapter(this);
         mPendingIntent =
@@ -40,45 +39,47 @@ public class MainActivity extends ActionBarActivity {
                 );
     }
 
-    public void readNFC(Intent intent) {
-        String builder = "";
+    private void readNFC(Intent intent) {
+        StringBuilder builder = new StringBuilder();
         Tag tag = intent.getParcelableExtra(NfcAdapter.EXTRA_TAG);
         NfcF techF = NfcF.get(tag);
         try {
             techF.connect();
             if (techF.isConnected()) {
-                ResultPollingObject result = nfcPolling(techF, techF.getSystemCode());
+                PollingResultObject result = nfcPolling(techF, techF.getSystemCode());
                 if(result != null && result.isSuccess()) {
-                    ResultReadObject readResult;
-                    TextView textView = (TextView)findViewById(R.id.read_result);
-                    textView.setText("");
+                    ReadResultObject readResult;
 
-                    builder += "IDm \t- " + byte2StringSpace(result.IDm, " ") + "\n";
-                    builder += "PMm \t- " + byte2StringSpace(result.PMm, " ") + "\n";
+                    builder.append("IDm \t- ")
+                            .append(byte2StringSpace(result.getIDm(), " "))
+                            .append("\n");
+                    builder.append("PMm \t- ")
+                            .append(byte2StringSpace(result.getPMm(), " "))
+                            .append("\n");
 
                     // ------- USER BLOCK --------
                     for(byte i = (byte)0x00; i < (byte)0x0f;i += (byte)0x01) {
-                        builder += String.format("%1$02x", i) + " - ";
-                        readResult = nfcReadWithoutEncryption(techF, result.IDm, new byte[]{i});
-                        if (readResult != null && readResult.isSuccess() && readResult.blockData.size() > 0) {
-                            builder += byte2StringSpace(readResult.blockData.get(0), " ") + "\n";
+                        builder.append(String.format("%1$02x", i)).append(" - ");
+                        readResult = nfcReadWithoutEncryption(techF, result.getIDm(), new byte[]{i});
+                        if (readResult != null && readResult.isSuccess() && readResult.getBlockData().size() > 0) {
+                            builder.append(byte2StringSpace(readResult.getBlockData().get(0), " ")).append("\n");
                         }else{
-                            builder += "00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00\n";
+                            builder.append("00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00\n");
                         }
                     }
 
                     for(byte i = (byte)0x80; i < (byte)0x89; i += (byte)0x01) {
-                        builder += String.format("%1$02x", i) + " - ";
-                        readResult = nfcReadWithoutEncryption(techF, result.IDm, new byte[]{i});
-                        if (readResult != null && readResult.isSuccess() && readResult.blockData.size() > 0) {
-                            builder += byte2StringSpace(readResult.blockData.get(0), " ") + "\n";
+                        builder.append(String.format("%1$02x", i)).append(" - ");
+                        readResult = nfcReadWithoutEncryption(techF, result.getIDm(), new byte[]{i});
+                        if (readResult != null && readResult.isSuccess() && readResult.getBlockData().size() > 0) {
+                            builder.append(byte2StringSpace(readResult.getBlockData().get(0), " ")).append("\n");
                         }else{
-                            builder += "00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00\n";
+                            builder.append("00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00\n");
                         }
                     }
 
                     System.out.println(builder);
-                    textView.setText(builder);
+                    binding.readResult.setText(builder);
                 }
             }
         } catch (IOException e) {
@@ -86,52 +87,10 @@ public class MainActivity extends ActionBarActivity {
         }
     }
 
-    private class ResultPollingObject {
-        private boolean success;
-        byte[] IDm = new byte[8];
-        byte[] PMm = new byte[8];
-        public boolean isSuccess(){
-            return this.success;
-        }
-        public ResultPollingObject(byte[] result) {
-            this.success = result[1] == 0x01;
-            if (this.success) {
-                System.arraycopy(result, 2, this.IDm, 0 , 8);
-                System.arraycopy(result, 10, this.PMm, 0 , 8);
-            }
-        }
-    }
-
-    public void writeData_危険(NfcF techF, byte[] IDm){
-        nfcWriteWithoutEncryption(techF, IDm, (byte)0x00,
-                new byte[]{0x00,0x0A,0x00,0x00,0x00,0x00,(byte)0xFF,(byte)0xFF,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00});
-
-        nfcWriteWithoutEncryption(techF, IDm, (byte)0x01,
-                new byte[]{0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00});
-
-        nfcWriteWithoutEncryption(techF, IDm, (byte)0x03,
-                new byte[]{0x31,0x32,0x31,0x30,0x30,0x31,0x30,0x30,0x2A,0x43,0x55,0x43,0x00,0x00,0x00,0x00});
-
-        nfcWriteWithoutEncryption(techF, IDm, (byte)0x04,
-                new byte[]{0x30,0x32,0x31,0x31,0x34,0x30,0x30,0x39,0x36,0x5F,0x00,0x00,0x00,0x00,0x00,0x00});
-
-        nfcWriteWithoutEncryption(techF, IDm, (byte)0x0e,
-                new byte[]{(byte)0xFF,(byte)0xFF,(byte)0xFF,(byte)0xFF,(byte)0xFF,(byte)0xFF,(byte)0xFF,(byte)0xFF,(byte)0xFF,(byte)0xFF,(byte)0xFF,(byte)0xFF,(byte)0xFF,(byte)0xFF,(byte)0xFF,(byte)0xFF});
-
-        nfcWriteWithoutEncryption(techF, IDm, (byte)0x82,
-                new byte[]{
-                        IDm[0],IDm[1],IDm[2],IDm[3],
-                        IDm[4],IDm[5],IDm[6],IDm[7],
-                        0x00, 0x46, 0x00, 0x11, 0x00, 0x00, 0x00, 0x00
-                });
-
-        nfcWriteWithoutEncryption(techF, IDm, (byte)0x86,
-                new byte[]{0x00,0x01,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00});
-    }
-
-    private ResultPollingObject nfcPolling(NfcF nfcF, byte[] SYSTEM_CODE) {
+    @Nullable
+    private PollingResultObject nfcPolling(@NonNull NfcF nfcF, byte[] SYSTEM_CODE) {
         try {
-            return new ResultPollingObject(
+            return new PollingResultObject(
                     nfcF.transceive(new byte[]{
                             (byte) 0x06, // data size
                             (byte) 0x00, // command polling -> 00
@@ -146,7 +105,8 @@ public class MainActivity extends ActionBarActivity {
         }
     }
 
-    private ResultReadObject nfcReadWithoutEncryption(NfcF nfcF, byte[] IDm, byte[] readBlock) {
+    @Nullable
+    private ReadResultObject nfcReadWithoutEncryption(@NonNull NfcF nfcF, byte[] IDm, byte[] readBlock) {
         try {
             byte[] command = new byte[]{
                     (byte) 0x06, // command polling -> 00
@@ -171,71 +131,9 @@ public class MainActivity extends ActionBarActivity {
                 byteBuf.put((byte)0x80);
                 byteBuf.put(readBlock[i]);
             }
-            return new ResultReadObject(nfcF.transceive(byteBuf.array()));
+            return new ReadResultObject(nfcF.transceive(byteBuf.array()));
         } catch (IOException e) {
             return null;
-        }
-    }
-    private ResultReadObject nfcWriteWithoutEncryption(NfcF nfcF, byte[] IDm, byte BLOCK, byte[] writeData) {
-        byte[] command = new byte[]{
-                (byte) 0x08, // command polling -> 00
-                IDm[0],
-                IDm[1],
-                IDm[2],
-                IDm[3],
-                IDm[4],
-                IDm[5],
-                IDm[6],
-                IDm[7],
-                (byte) 0x01, // service count
-                (byte) 0x09, // service code
-                (byte) 0x00, // service code
-                (byte) 0x01, // WRITE block num
-                (byte) 0x80,
-                BLOCK};
-        int byteSize = command.length + writeData.length + 1;
-        ByteBuffer byteBuf = ByteBuffer.allocate(byteSize);
-        byteBuf.put((byte)(byteSize));
-        byteBuf.put(command);
-        byteBuf.put(writeData);
-
-        System.out.println(byte2StringSpace(byteBuf.array(), " "));
-
-        try {
-            return new ResultReadObject(
-                    nfcF.transceive(byteBuf.array())
-            );
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-        return null;
-    }
-
-    private class ResultReadObject {
-        private boolean success;
-        byte[] IDm = new byte[8];
-        byte statusFlag1;
-        byte statusFlag2;
-        int blockNum;
-        ArrayList<byte[]> blockData = new ArrayList<>();
-        public boolean isSuccess(){
-            return this.success;
-        }
-        public ResultReadObject(byte[] result){
-            this.success = result[1] == 0x07;
-            if (this.success) {
-                System.arraycopy(result, 2, this.IDm, 0, 8);
-                this.statusFlag1 = result[10];
-                this.statusFlag2 = result[11];
-                if(this.statusFlag1 == 0x00){
-                    this.blockNum = (int)result[12];
-                    for(int i = 0 ; i < this.blockNum; i++){
-                        byte[] dat = new byte[16];
-                        System.arraycopy(result, 12 * (1 + i) + 1, dat, 0, 16);
-                        blockData.add(dat);
-                    }
-                }
-            }
         }
     }
 
@@ -250,16 +148,7 @@ public class MainActivity extends ActionBarActivity {
         }
     }
 
-    private String byte2String(byte[] bytes) {
-        StringBuilder ret = new StringBuilder();
-        if ( bytes != null) {
-            for (byte aByte : bytes) {
-                ret.append(Integer.toHexString(aByte)) ;
-            }
-        }
-        return ret.toString();
-    }
-
+    @NonNull
     private String byte2StringSpace(byte[] bytes, String separate) {
         StringBuilder ret = new StringBuilder();
         if ( bytes != null) {
@@ -268,17 +157,7 @@ public class MainActivity extends ActionBarActivity {
                 str = (str.length() == 1)? "0" + str:str;
                 str = str.replace("ff", "");
                 if(str.equals("")) str = "FF";
-                ret.append(str.toUpperCase() + separate);
-            }
-        }
-        return ret.toString();
-    }
-
-    private String byte2String(byte[] bytes, byte mask) {
-        StringBuilder ret = new StringBuilder();
-        if ( bytes != null) {
-            for (byte aByte : bytes) {
-                ret.append(Integer.toHexString(aByte & mask)) ;
+                ret.append(str.toUpperCase()).append(separate);
             }
         }
         return ret.toString();
@@ -293,13 +172,14 @@ public class MainActivity extends ActionBarActivity {
     @Override
     protected void onResume(){
         super.onResume();
-        if (mNfcAdapter != null) mNfcAdapter.enableForegroundDispatch(this, mPendingIntent, null, null);
+        if (mNfcAdapter != null)
+            mNfcAdapter.enableForegroundDispatch(this, mPendingIntent, null, null);
     }
 
     @Override
     protected  void onPause(){
         super.onPause();
-        if (mNfcAdapter != null) mNfcAdapter.disableForegroundDispatch(this);
+        if (mNfcAdapter != null)
+            mNfcAdapter.disableForegroundDispatch(this);
     }
-
 }

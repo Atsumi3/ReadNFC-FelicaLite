@@ -1,16 +1,19 @@
-<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:tools="http://schemas.android.com/tools"
-    android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    android:padding="8dp"
-    tools:context="info.nukoneko.android.readnfcf.MainActivity">
+<layout>
 
-    <TextView
-        android:id="@+id/read_result"
+    <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+        xmlns:tools="http://schemas.android.com/tools"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:padding="8dp"
-        android:textSize="12sp"
-        android:background="@drawable/dot_line"/>
+        tools:context="info.nukoneko.android.readnfcf.MainActivity">
 
-</RelativeLayout>
+        <TextView
+            android:id="@+id/read_result"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:padding="8dp"
+            android:textSize="12sp"
+            android:background="@drawable/dot_line"/>
+
+    </LinearLayout>
+</layout>
