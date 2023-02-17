@@ -1,7 +1,10 @@
-apply plugin: 'com.android.application'
-apply plugin: 'kotlin-android'
+plugins {
+    id 'com.android.application'
+    id 'org.jetbrains.kotlin.android'
+}
 
 android {
+    namespace "jp.bizen.android.nfc.felica"
     compileSdkVersion 33
 
     apply from: 'signingConfigs/debug.gradle', to: android
@@ -38,8 +41,4 @@ android {
     kotlinOptions {
         jvmTarget = '11'
     }
-}
-
-dependencies {
-    implementation 'org.jetbrains.kotlin:kotlin-stdlib-jdk8:1.7.20'
 }
