@@ -63,7 +63,8 @@ object FelicaLiteCommand {
                     nfcF,
                     systemCode
                 )
-                if (result.isSuccess) {
+                val idm = result.iDm
+                if (result.responseCode == 0x01.toByte()) {
                     listOf(
                         "SYSTEM_CODE ${systemCode.toStr}",
                         "----------------------------",
@@ -71,7 +72,7 @@ object FelicaLiteCommand {
                         "PMm \t- ${result.pMm.toStr}",
                         "----------------------------",
                         readWithoutEncryption(
-                            nfcF = nfcF, IDm = result.iDm, blockList = listOf(
+                            nfcF = nfcF, IDm = idm, blockList = listOf(
                                 Block.S_PAD0,
                                 Block.S_PAD1,
                                 Block.S_PAD2,
@@ -79,7 +80,7 @@ object FelicaLiteCommand {
                             )
                         ).readableText,
                         readWithoutEncryption(
-                            nfcF = nfcF, IDm = result.iDm, blockList = listOf(
+                            nfcF = nfcF, IDm = idm, blockList = listOf(
                                 Block.S_PAD4,
                                 Block.S_PAD5,
                                 Block.S_PAD6,
@@ -87,7 +88,7 @@ object FelicaLiteCommand {
                             )
                         ).readableText,
                         readWithoutEncryption(
-                            nfcF = nfcF, IDm = result.iDm, blockList = listOf(
+                            nfcF = nfcF, IDm = idm, blockList = listOf(
                                 Block.S_PAD8,
                                 Block.S_PAD9,
                                 Block.S_PAD10,
@@ -95,7 +96,7 @@ object FelicaLiteCommand {
                             )
                         ).readableText,
                         readWithoutEncryption(
-                            nfcF = nfcF, IDm = result.iDm, blockList = listOf(
+                            nfcF = nfcF, IDm = idm, blockList = listOf(
                                 Block.S_PAD12,
                                 Block.S_PAD13,
                                 Block.REG,
@@ -103,7 +104,7 @@ object FelicaLiteCommand {
                             )
                         ).readableText,
                         readWithoutEncryption(
-                            nfcF = nfcF, IDm = result.iDm, blockList = listOf(
+                            nfcF = nfcF, IDm = idm, blockList = listOf(
                                 Block.MAC,
                                 Block.ID,
                                 Block.D_ID,
@@ -111,7 +112,7 @@ object FelicaLiteCommand {
                             )
                         ).readableText,
                         readWithoutEncryption(
-                            nfcF = nfcF, IDm = result.iDm, blockList = listOf(
+                            nfcF = nfcF, IDm = idm, blockList = listOf(
                                 Block.SYS_C,
                                 Block.CKV,
                                 Block.CK,

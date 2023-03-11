@@ -1,5 +1,3 @@
-@file:Suppress("unused")
-
 package jp.bizen.android.nfc.felica.entity.felicalite
 
 import jp.bizen.android.nfc.felica.extension.toStr
